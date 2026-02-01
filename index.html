@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Will you be my Valentine?</title>
+  <style>
+    :root {
+      --bg1: #ffdde1;
+      --bg2: #ee9ca7;
+      --card: rgba(255,255,255,0.85);
+      --shadow: 0 18px 50px rgba(0,0,0,0.12);
+      --yes: #22c55e;
+      --no: #ef4444;
+      --text: #111827;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 10%, #fff 0 10%, transparent 11%),
+                  radial-gradient(circle at 80% 30%, #fff 0 9%, transparent 10%),
+                  radial-gradient(circle at 30% 80%, #fff 0 8%, transparent 9%),
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+      overflow: hidden;
+    }
+
+    /* Floating hearts background */
+    .hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.35;
+      filter: blur(0.1px);
+    }
+    .heart {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      transform: rotate(45deg);
+      background: rgba(255,255,255,0.9);
+      animation: floatUp linear infinite;
+      border-radius: 4px;
+    }
+    .heart::before, .heart::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: inherit;
+      border-radius: 50%;
+    }
+    .heart::before { left: -9px; top: 0; }
+    .heart::after  { left: 0; top: -9px; }
+
+    @keyframes floatUp {
+      from { transform: translateY(120vh) rotate(45deg); }
+      to   { transform: translateY(-20vh) rotate(45deg); }
+    }
+
+    .wrap {
+      width: min(92vw, 560px);
+      padding: 26px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 4.6vw, 38px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0 0 18px;
+      font-size: 16px;
+      opacity: 0.85;
+    }
+
+    .buttons {
+      position: relative;
+      width: 100%;
+      height: 92px; /* space where the No button can move */
+      display: grid;
+      place-items: center;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 0;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.2s ease;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { transform: scale(0.98); }
+
+    #yesBtn {
+      background: var(--yes);
+      color: white;
+      margin-right: 12px;
+    }
+
+    /* No button is absolutely positioned so we can move it */
+    #noBtn {
+      background: var(--no);
+      color: white;
+      position: absolute;
+      left: 58%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .result {
+      display: none;
+      margin-top: 18px;
+      padding: 14px 14px;
+      border-radius: 16px;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.35);
+    }
+    .result h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+    .result .gif {
+      margin-top: 10px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .result img {
+      width: 100%;
+      display: block;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 13px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" id="hearts"></div>
+
+  <main class="wrap" aria-live="polite">
+    <h1>Will you be my Valentine? 💘</h1>
+    <p>Be honest… but choose wisely 😄</p>
+
+    <div class="buttons" id="arena">
+      <div class="row">
+        <button id="yesBtn">Yes 💖</button>
+      </div>
+      <button id="noBtn">No 🙃</button>
+    </div>
+
+    <div class="result" id="result">
+      <h2>Yay!! 🥰💐</h2>
+      <div>See you on Valentine’s Day! 💞</div>
+
+      <!-- Optional GIF: replace src with any image/GIF you like -->
+      <div class="gif">
+        <img
+          alt="cute celebration"
+          src="https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif"
+        />
+      </div>
+    </div>
+
+    <div class="hint">Tip: “No” is… a moving target.</div>
+  </main>
+
+  <script>
+    // --- Floating hearts background ---
+    const hearts = document.getElementById("hearts");
+    const HEART_COUNT = 18;
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    for (let i = 0; i < HEART_COUNT; i++) {
+      const h = document.createElement("div");
+      h.className = "heart";
+      h.style.left = rand(0, 100) + "vw";
+      h.style.animationDuration = rand(6, 14) + "s";
+      h.style.animationDelay = rand(0, 10) + "s";
+      h.style.opacity = rand(0.25, 0.75);
+      h.style.transform = `translateY(${rand(0, 120)}vh) rotate(45deg)`;
+      hearts.appendChild(h);
+    }
+
+    // --- Valentine interaction ---
+    const arena = document.getElementById("arena");
+    const noBtn = document.getElementById("noBtn");
+    const yesBtn = document.getElementById("yesBtn");
+    const result = document.getElementById("result");
+
+    function moveNoButton() {
+      const rect = arena.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
+
+      // Keep button inside arena with some padding
+      const padding = 8;
+      const maxX = rect.width - btnRect.width - padding;
+      const maxY = rect.height - btnRect.height - padding;
+
+      const x = rand(padding, Math.max(padding, maxX));
+      const y = rand(padding, Math.max(padding, maxY));
+
+      noBtn.style.left = x + "px";
+      noBtn.style.top = y + "px";
+      noBtn.style.transform = "translate(0, 0)";
+    }
+
+    // Make "No" dodge on hover (desktop) and touchstart (mobile)
+    noBtn.addEventListener("mouseenter", moveNoButton);
+    noBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault(); // prevents tap from "clicking" it
+      moveNoButton();
+    }, { passive: false });
+
+    // If someone somehow clicks No, still move it
+    noBtn.addEventListener("click", moveNoButton);
+
+    // Yes reveals success message
+    yesBtn.addEventListener("click", () => {
+      result.style.display = "block";
+      noBtn.style.display = "none";
+      yesBtn.disabled = true;
+      yesBtn.style.filter = "grayscale(0.1)";
+      yesBtn.textContent = "Yes (locked) 💖";
+    });
+
+    // Initial nudge so No isn't perfectly centered every time
+    setTimeout(moveNoButton, 350);
+  </script>
+</body>
+</html>
+
